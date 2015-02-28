@@ -16,7 +16,11 @@ var DebugClient = (function() {
     this.host = host;
 
     var client = this;
-    this.once('connect', callback);
+
+    if (callback) {
+      this.once('connect', callback);
+    }
+
     this.targets(function(targets) {
       client.emit('connect', targets);
     });
@@ -53,7 +57,9 @@ var DebugClient = (function() {
     var socket = ws.connect(target.webSocketDebuggerUrl);
     var client = this;
 
-    this.once('attach', callback);
+    if (callback) {
+      this.once('attach', callback);
+    }
 
     socket.once('open', function() {
       var id = Date.now();

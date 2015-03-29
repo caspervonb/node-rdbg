@@ -5,35 +5,59 @@ var events = require('events');
 var util = require('util');
 
 var ChromeConnection = (function() {
-  function ChromeConnection() {
+  function ChromeConnection(port, host) {
     events.EventEmitter.call(this);
+
+    this._port = port;
+    this._host = host;
+    
+    this._callbacks = {};
+    this._scripts = [];
   }
 
   util.inherits(ChromeConnection, events.EventEmitter);
 
-  ChromeConnection.prototype.connect = function(port, host, callback) {
-    this.port = port;
-    this.host = host;
+  ChromeConnection.prototype._send = function(method, params, callback) {
+    var id = Date.now();
 
-    var client = this;
+    var message = {
+      id: id,
+      method: method,
+      params: params
+    };
 
-    if (callback) {
-      this.once('connect', callback);
-    }
-
-    this.targets(function(targets) {
-      client.emit('connect', targets);
-    });
+    this._callbacks[id] = callback;
+    this._socket.send(JSON.stringify(message));
   };
 
-  ChromeConnection.prototype.targets = function targets(callback) {
+  ChromeConnection.prototype._process = function(message) {
+    if (message.id) {
+      var callback = this._callbacks[message.id];
+
+      if (callback) {
+        if (message.error) {
+          callback(message.error);
+        } else {
+          callback(null, message.params);
+        }
+
+        delete this._callbacks[message.id];
+      }
+    } else {
+      if (message.method == 'Debugger.scriptParsed') {
+        this._scripts.push(message.params);
+      }
+    }
+  };
+
+  ChromeConnection.prototype.targets = function(callback) {
     var options = {
-      host: this.host,
-      port: this.port,
+      host: this._host,
+      port: this._port,
       path: '/json'
     };
 
-    var client = this;
+    var self = this;
     var request = http.get(options, function(response) {
       var data = '';
 
@@ -48,120 +72,63 @@ var ChromeConnection = (function() {
     });
 
     request.on('error', function(error) {
-      client.emit('error', error);
+      self.emit('error', error);
     });
   };
 
-  ChromeConnection.prototype.attach = function attach(target, callback) {
-    var scripts = [];
+  ChromeConnection.prototype.attach = function attach(target) {
     var socket = ws.connect(target.webSocketDebuggerUrl);
-    var client = this;
 
-    if (callback) {
-      this.once('attach', callback);
-    }
-
+    var self = this;
     socket.once('open', function() {
-      var id = Date.now();
-
-      socket.on('message', function process(data) {
-        var message = JSON.parse(data);
-        if (message.id == id) {
-          socket.removeListener('message', process);
-
-          if (message.error) {
-            client.emit('error', message.error);
-            return;
-          }
-
-          client.emit('attach', target);
-        }
+      self._send('Debugger.enable', {}, function(error) {
+        self.emit('attach', target);
       });
-
-      socket.send(JSON.stringify({
-        id: id,
-        method: "Debugger.enable"
-      }));
     });
 
     socket.on('message', function(data) {
-      var message = JSON.parse(data);
-      if (message.method == 'Debugger.scriptParsed') {
-        scripts.push(message.params);
-      }
-
-      if (message.method == 'Inspector.detached') {
-        client.emit('detatch');
+      try {
+        var message = JSON.parse(data);
+        self._process(message);
+      } catch (error) {
       }
     });
 
-    this.socket = socket;
-    this.scripts = scripts;
+    this._socket = socket;
   };
 
   ChromeConnection.prototype.source = function source(filename, contents, callback) {
-    var socket = this.socket;
-    var scripts = this.scripts;
-
-    var script = scripts.filter(function(src) {
+    var script = this._scripts.filter(function(src) {
       return path.basename(src.url) == filename;
     })[0];
 
-    if (!script) {
+    if (script === undefined) {
       return callback('Unknown script ' + filename);
     }
 
-    var id = Date.now();
-    socket.on('message', function process(data) {
-      var message = JSON.parse(data);
-      if (message.id == id) {
-        socket.removeListener('message', process);
+    var params = {
+      scriptId: script.scriptId,
+      scriptSource: contents
+    };
 
-        if (message.error) {
-          return callback(message.error);
-        }
-
-        callback(null, null);
+    this._send('Debugger.setScriptSource', params, function(error, params) {
+      if (error) {
+        return callback(error);
       }
+
+      callback(null, params);
     });
-
-    if (contents) {
-      socket.send(JSON.stringify({
-        id: id,
-        method: "Debugger.setScriptSource",
-        params: {
-          scriptId: script.scriptId,
-          scriptSource: contents
-        }
-      }));
-    } else {
-      var request = http.get(script.url, function(response) {
-        var contents = '';
-
-        response.on('data', function(chunk) {
-          contents += chunk;
-        });
-
-        response.on('end', function() {        
-          socket.send(JSON.stringify({
-            id: id,
-            method: "Debugger.setScriptSource",
-            params: {
-              scriptId: script.scriptId,
-              scriptSource: contents
-            }
-          }));
-        });
-      });
-    }
   };
 
   return ChromeConnection;
 }());
 
-function connect(host, port, callback) {
-  var client = new ChromeConnection();
-  client.connect(host, port, callback);
+function connect(port, host, callback) {
+  var client = new ChromeConnection(port, host);
+
+  if (callback) {
+    client.on('attach', callback);
+  }
 
   return client;
 }

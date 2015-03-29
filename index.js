@@ -4,14 +4,14 @@ var path = require('path');
 var events = require('events');
 var util = require('util');
 
-var DebugClient = (function() {
-  function DebugClient() {
+var ChromeConnection = (function() {
+  function ChromeConnection() {
     events.EventEmitter.call(this);
   }
 
-  util.inherits(DebugClient, events.EventEmitter);
+  util.inherits(ChromeConnection, events.EventEmitter);
 
-  DebugClient.prototype.connect = function(port, host, callback) {
+  ChromeConnection.prototype.connect = function(port, host, callback) {
     this.port = port;
     this.host = host;
 
@@ -26,7 +26,7 @@ var DebugClient = (function() {
     });
   };
 
-  DebugClient.prototype.targets = function targets(callback) {
+  ChromeConnection.prototype.targets = function targets(callback) {
     var options = {
       host: this.host,
       port: this.port,
@@ -52,7 +52,7 @@ var DebugClient = (function() {
     });
   };
 
-  DebugClient.prototype.attach = function attach(target, callback) {
+  ChromeConnection.prototype.attach = function attach(target, callback) {
     var scripts = [];
     var socket = ws.connect(target.webSocketDebuggerUrl);
     var client = this;
@@ -99,7 +99,7 @@ var DebugClient = (function() {
     this.scripts = scripts;
   };
 
-  DebugClient.prototype.source = function source(filename, contents, callback) {
+  ChromeConnection.prototype.source = function source(filename, contents, callback) {
     var socket = this.socket;
     var scripts = this.scripts;
 
@@ -156,11 +156,11 @@ var DebugClient = (function() {
     }
   };
 
-  return DebugClient;
+  return ChromeConnection;
 }());
 
 function connect(host, port, callback) {
-  var client = new DebugClient();
+  var client = new ChromeConnection();
   client.connect(host, port, callback);
 
   return client;

@@ -37,8 +37,10 @@ var ChromeConnection = (function() {
       if (callback) {
         if (message.error) {
           callback(message.error);
-        } else {
+        } else if (message.params) {
           callback(null, message.params);
+        } else if (message.result) {
+          callback(null, message.result);
         }
 
         delete this._callbacks[message.id];
@@ -82,7 +84,17 @@ var ChromeConnection = (function() {
     var self = this;
     socket.once('open', function() {
       self._send('Debugger.enable', {}, function(error) {
-        self.emit('attach', target);
+        if (error) {
+          return this.emit('error', error);
+        }
+
+        self._send('Runtime.enable', {}, function(error) {
+          if (error) {
+            return this.emit('error', error);
+          }
+
+          self.emit('attach', target);
+        });
       });
     });
 
@@ -95,6 +107,20 @@ var ChromeConnection = (function() {
     });
 
     this._socket = socket;
+  };
+
+  ChromeConnection.prototype.evaluate = function evaluate(expression, callback) {
+    var params = {
+      expression: expression,
+    };
+
+    this._send('Runtime.evaluate', params, function evaluate(error, params) {
+      if (error) {
+        return callback(error);
+      }
+
+      callback(null, params.result);
+    });
   };
 
   ChromeConnection.prototype.source = function source(filename, contents, callback) {

@@ -82,7 +82,7 @@ var ChromeConnection = (function() {
     var socket = ws.connect(target.webSocketDebuggerUrl);
 
     var self = this;
-    socket.once('open', function() {
+    socket.on('open', function() {
       self._send('Debugger.enable', {}, function(error) {
         if (error) {
           return this.emit('error', error);

@@ -98,6 +98,10 @@ var ChromeConnection = (function() {
       });
     });
 
+    socket.on('close', function() {
+      self.emit('detatch', target);
+    })
+
     socket.on('message', function(data) {
       try {
         var message = JSON.parse(data);

@@ -3,6 +3,7 @@ var ws = require('ws');
 var path = require('path');
 var events = require('events');
 var util = require('util');
+var async = require('async');
 
 var ChromeConnection = (function() {
   function ChromeConnection(port, host) {
@@ -82,25 +83,29 @@ var ChromeConnection = (function() {
     var socket = ws.connect(target.webSocketDebuggerUrl);
 
     var self = this;
+    var send = self._send.bind(self);
+
     socket.on('open', function() {
-      self._send('Debugger.enable', {}, function(error) {
+      async.series([
+        async.apply(send, 'Debugger.enable', {}),
+        async.apply(send, 'Runtime.enable', {}),
+        async.apply(send, 'Console.enable', {}),
+      ], function(error) {
         if (error) {
-          return this.emit('error', error);
+          return self.emit('error', error);
         }
 
-        self._send('Runtime.enable', {}, function(error) {
-          if (error) {
-            return this.emit('error', error);
-          }
-
-          self.emit('attach', target);
-        });
+        self.emit('attach', target);
       });
     });
 
     socket.on('close', function() {
       self.emit('detatch', target);
-    })
+    });
+
+    socket.on('error', function(error) {
+      self.emit('error', error);
+    });
 
     socket.on('message', function(data) {
       try {

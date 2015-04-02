@@ -11,12 +11,19 @@ var ChromeConnection = (function() {
 
     this._port = port;
     this._host = host;
-    
+
     this._callbacks = {};
     this._scripts = [];
+    this._console = new events.EventEmitter();
   }
 
   util.inherits(ChromeConnection, events.EventEmitter);
+
+  Object.defineProperty(ChromeConnection.prototype, 'console', {
+    get: function() {
+      return this._console;
+    },
+  });
 
   ChromeConnection.prototype._send = function(method, params, callback) {
     var id = Date.now();
@@ -49,6 +56,8 @@ var ChromeConnection = (function() {
     } else {
       if (message.method == 'Debugger.scriptParsed') {
         this._scripts.push(message.params);
+      } else if (message.method == 'Console.messageAdded') {
+        this._console.emit('data', message.params.message);
       }
     }
   };

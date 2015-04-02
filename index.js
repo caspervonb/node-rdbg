@@ -35,7 +35,12 @@ var ChromeConnection = (function() {
     };
 
     this._callbacks[id] = callback;
-    this._socket.send(JSON.stringify(message));
+
+    try {
+      this._socket.send(JSON.stringify(message));
+    } catch (error) {
+      return callback(error);
+    }
   };
 
   ChromeConnection.prototype._process = function(message) {

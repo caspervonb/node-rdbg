@@ -126,6 +126,7 @@ var ChromeConnection = (function() {
         var message = JSON.parse(data);
         self._process(message);
       } catch (error) {
+        this.error(error);
       }
     });
 

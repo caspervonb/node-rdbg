@@ -44,7 +44,7 @@ var ChromeConnection = (function() {
   };
 
   ChromeConnection.prototype._process = function(message) {
-    if (message.id) {
+    if (message.id !== undefined) {
       var callback = this._callbacks[message.id];
 
       if (callback) {

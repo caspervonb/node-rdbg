@@ -12,7 +12,9 @@ var ChromeConnection = (function() {
     this._port = port;
     this._host = host;
 
-    this._callbacks = {};
+    this._callbacks = [];
+    this._counter = 0;
+
     this._scripts = [];
     this._console = new events.EventEmitter();
   }
@@ -26,7 +28,7 @@ var ChromeConnection = (function() {
   });
 
   ChromeConnection.prototype._send = function(method, params, callback) {
-    var id = Date.now();
+    var id = this._counter++;
 
     var message = {
       id: id,

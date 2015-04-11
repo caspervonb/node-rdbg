@@ -151,10 +151,12 @@ var ChromeConnection = (function() {
 
   ChromeConnection.prototype.source = function source(filename, contents, callback) {
     var script = this._scripts.filter(function(src) {
-      return path.basename(src.url) == filename;
+      var location = url.parse(src.url);
+      return path.relative('/', location.path || '') === filename;
     })[0];
 
     if (script === undefined) {
+      var error = Error();
       return callback('Unknown script ' + filename);
     }
 

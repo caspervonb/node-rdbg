@@ -4,6 +4,7 @@ var path = require('path');
 var events = require('events');
 var util = require('util');
 var async = require('async');
+var url = require('url');
 
 var ChromeConnection = (function() {
   function ChromeConnection(port, host) {

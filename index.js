@@ -150,16 +150,9 @@ var ChromeConnection = (function() {
     });
   };
 
-  ChromeConnection.prototype.source = function source(filename, contents, callback) {
-    var script = this._scripts.filter(function(src) {
-      var location = url.parse(src.url);
-      return path.relative('/', location.path || '') === filename;
-    })[0];
-
-    if (script === undefined) {
-      var error = Error();
-      return callback('Unknown script ' + filename);
-    }
+  ChromeConnection.prototype.scripts = function scripts(callback) {
+    callback(this._scripts);
+  };
 
     var params = {
       scriptId: script.scriptId,

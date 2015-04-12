@@ -154,17 +154,27 @@ var ChromeConnection = (function() {
     callback(this._scripts);
   };
 
+  ChromeConnection.prototype.source = function source(script, contents, callback) {
     var params = {
       scriptId: script.scriptId,
       scriptSource: contents
     };
 
+    var self = this;
     this._send('Debugger.setScriptSource', params, function(error, params) {
       if (error) {
-        return callback(error);
+        if (callback) {
+          return callback(error);
+        } else {
+          return self.emit('error', error);
+        }
       }
 
-      callback(null, params);
+      self.emit('source', script);
+
+      if (callback) {
+        callback(null, params);
+      }
     });
   };
 

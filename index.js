@@ -103,6 +103,8 @@ var ChromeConnection = (function() {
     var send = self._send.bind(self);
 
     socket.on('open', function() {
+      self._scripts = [];
+
       async.series([
         async.apply(send, 'Debugger.enable', {}),
         async.apply(send, 'Runtime.enable', {}),
@@ -117,6 +119,8 @@ var ChromeConnection = (function() {
     });
 
     socket.on('close', function() {
+      self._scripts = [];
+
       self.emit('detatch', target);
     });
 

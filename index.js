@@ -13,6 +13,8 @@ var ChromeConnection = (function() {
     this._port = port;
     this._host = host;
 
+    this._socket = null;
+
     this._callbacks = [];
     this._counter = 0;
 

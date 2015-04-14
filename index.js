@@ -65,6 +65,10 @@ var ChromeConnection = (function() {
       }
     } else {
       if (message.method == 'Debugger.scriptParsed') {
+        this._scripts = this.scripts.filter(function(script) {
+          return message.params.url !== script.url;
+        });
+
         this._scripts.push(message.params);
       } else if (message.method == 'Console.messageAdded') {
         this._console.emit('data', message.params.message);

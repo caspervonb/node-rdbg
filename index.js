@@ -65,7 +65,7 @@ var ChromeConnection = (function() {
       }
     } else {
       if (message.method == 'Debugger.scriptParsed') {
-        this._scripts = this.scripts.filter(function(script) {
+        this._scripts = this._scripts.filter(function(script) {
           return message.params.url !== script.url;
         });
 

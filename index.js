@@ -6,11 +6,8 @@ var util = require('util');
 var async = require('async');
 var url = require('url');
 
-function Inspector(port, host) {
+function Inspector() {
   events.EventEmitter.call(this);
-
-  this._port = port;
-  this._host = host;
 
   this._socket = null;
 
@@ -75,29 +72,28 @@ Inspector.prototype._process = function(message) {
   }
 };
 
-Inspector.prototype.targets = function(callback) {
-  var options = {
-    host: this._host,
-    port: this._port,
+Inspector.prototype.targets = function(port, host, callback) {
+  var request = http.get({
+    port: port,
+    host: host,
     path: '/json'
-  };
+  });
 
-  var self = this;
-  var request = http.get(options, function(response) {
-    var data = '';
+  request.on('response', function(response) {
+    var body = '';
 
     response.on('data', function(chunk) {
-      data += chunk;
+      body += chunk;
     });
 
     response.on('end', function() {
-      var targets = JSON.parse(data);
-      callback(targets);
+      var targets = JSON.parse(body);
+      return callback(null, targets);
     });
   });
 
   request.on('error', function(error) {
-    self.emit('error', error);
+    return callback(error);
   });
 };
 

@@ -6,7 +6,7 @@ var util = require('util');
 var async = require('async');
 var url = require('url');
 
-function ChromeConnection(port, host) {
+function Inspector(port, host) {
   events.EventEmitter.call(this);
 
   this._port = port;
@@ -21,15 +21,15 @@ function ChromeConnection(port, host) {
   this._console = new events.EventEmitter();
 }
 
-util.inherits(ChromeConnection, events.EventEmitter);
+util.inherits(Inspector, events.EventEmitter);
 
-Object.defineProperty(ChromeConnection.prototype, 'console', {
+Object.defineProperty(Inspector.prototype, 'console', {
   get: function() {
     return this._console;
   },
 });
 
-ChromeConnection.prototype._send = function(method, params, callback) {
+Inspector.prototype._send = function(method, params, callback) {
   var id = this._counter++;
 
   var message = {
@@ -47,7 +47,7 @@ ChromeConnection.prototype._send = function(method, params, callback) {
   }
 };
 
-ChromeConnection.prototype._process = function(message) {
+Inspector.prototype._process = function(message) {
   if (message.id !== undefined) {
     var callback = this._callbacks[message.id];
 
@@ -75,7 +75,7 @@ ChromeConnection.prototype._process = function(message) {
   }
 };
 
-ChromeConnection.prototype.targets = function(callback) {
+Inspector.prototype.targets = function(callback) {
   var options = {
     host: this._host,
     port: this._port,
@@ -101,7 +101,7 @@ ChromeConnection.prototype.targets = function(callback) {
   });
 };
 
-ChromeConnection.prototype.attach = function attach(target) {
+Inspector.prototype.attach = function attach(target) {
   var socket = ws.connect(target.webSocketDebuggerUrl);
 
   var self = this;
@@ -145,7 +145,7 @@ ChromeConnection.prototype.attach = function attach(target) {
   this._socket = socket;
 };
 
-ChromeConnection.prototype.evaluate = function evaluate(expression, callback) {
+Inspector.prototype.evaluate = function evaluate(expression, callback) {
   var params = {
     expression: expression,
   };
@@ -159,11 +159,11 @@ ChromeConnection.prototype.evaluate = function evaluate(expression, callback) {
   });
 };
 
-ChromeConnection.prototype.scripts = function scripts(callback) {
+Inspector.prototype.scripts = function scripts(callback) {
   callback(this._scripts);
 };
 
-ChromeConnection.prototype.source = function source(script, contents, callback) {
+Inspector.prototype.source = function source(script, contents, callback) {
   var params = {
     scriptId: script.scriptId,
     scriptSource: contents
@@ -188,7 +188,7 @@ ChromeConnection.prototype.source = function source(script, contents, callback) 
 };
 
 function connect(port, host, callback) {
-  var client = new ChromeConnection(port, host);
+  var client = new Inspector(port, host);
 
   if (callback) {
     client.on('attach', callback);

@@ -26,19 +26,16 @@ Object.defineProperty(Inspector.prototype, 'console', {
   },
 });
 
-Inspector.prototype._send = function(method, params, callback) {
-  var id = this._counter++;
-
-  var message = {
-    id: id,
-    method: method,
-    params: params
-  };
-
-  this._callbacks[id] = callback;
-
+Inspector.prototype.sendCommand = function(method, params, callback) {
   try {
-    this._socket.send(JSON.stringify(message));
+    var id = this._counter++;
+
+    this._socket.send(JSON.stringify({
+      id: id,
+      method: method,
+      params: params
+    }));
+    this._callbacks[id] = callback;
   } catch (error) {
     return callback(error);
   }
@@ -101,7 +98,7 @@ Inspector.prototype.attach = function attach(target) {
   var socket = ws.connect(target.webSocketDebuggerUrl);
 
   var self = this;
-  var send = self._send.bind(self);
+  var send = self.sendCommand.bind(self);
 
   socket.on('open', function() {
     self._scripts = [];
@@ -146,7 +143,7 @@ Inspector.prototype.evaluate = function evaluate(expression, callback) {
     expression: expression,
   };
 
-  this._send('Runtime.evaluate', params, function evaluate(error, params) {
+  this.sendCommand('Runtime.evaluate', params, function evaluate(error, params) {
     if (error) {
       return callback(error);
     }
@@ -166,7 +163,7 @@ Inspector.prototype.source = function source(script, contents, callback) {
   };
 
   var self = this;
-  this._send('Debugger.setScriptSource', params, function(error, params) {
+  this.sendCommand('Debugger.setScriptSource', params, function(error, params) {
     if (error) {
       if (callback) {
         return callback(error);

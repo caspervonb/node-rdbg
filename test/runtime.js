@@ -168,3 +168,33 @@ test('Runtime.releaseObject', assert => {
     });
   });
 });
+
+test('Runtime.releaseObjectGroup', assert => {
+  let server = ws.createServer({port: '4000'});
+  server.once('connection', connection => {
+
+    connection.on('message', data => {
+      let message = JSON.parse(data);
+      connection.send(JSON.stringify({
+        id: message.id,
+        error: false
+      }));
+    });
+  });
+
+  server.on('listening', () => {
+    let client = rdbg.connect('ws://localhost:4000');
+    client.once('connect', () => {
+      let runtime = client.runtime;
+
+      client.once('response', (request, response) => {
+        assert.deepEqual({objectGroup: '5'}, request.params, 'request to release all remote objects belonging to a given group');  
+        assert.error(response.error, 'response with no errors');      
+        server.close();
+        assert.end();
+      });
+
+      runtime.releaseObjectGroup('5',error => {});
+    });
+  });
+});

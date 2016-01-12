@@ -105,3 +105,36 @@ test('Runtime.evaluate', assert => {
     });
   });
 });
+
+test('Runtime.getProperties', assert => {
+  let server = ws.createServer({port: '4000'});
+  server.once('connection', connection => {
+
+    connection.on('message', data => {
+      let message = JSON.parse(data);
+      connection.send(JSON.stringify({
+        id: message.id,
+        error: false,
+        result: {
+          result: [{name: 'prop'}]
+        }
+      }));
+    });
+  });
+
+  server.on('listening', () => {
+    let client = rdbg.connect('ws://localhost:4000');
+    client.once('connect', () => {
+      let runtime = client.runtime;
+
+      client.once('response', (request, response) => {
+        assert.deepEqual({objectId: '5'}, request.params, 'request for the properties of a given object');  
+        assert.deepEqual([{name: 'prop'}], response.result.result, 'response with a list of properies');
+        server.close();
+        assert.end();
+      });
+
+      runtime.getProperties('5', error => {});
+    });
+  });
+});

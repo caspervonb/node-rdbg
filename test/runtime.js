@@ -72,3 +72,36 @@ test('Runtime.enable', assert => {
     });
   });
 });
+
+test('Runtime.evaluate', assert => {
+  let server = ws.createServer({port: '4000'});
+  server.once('connection', connection => {
+
+    connection.on('message', data => {
+      let message = JSON.parse(data);
+      connection.send(JSON.stringify({
+        id: message.id,
+        error: false,
+        result: {
+          result: {type: 'object'}
+        }
+      }));
+    });
+  });
+
+  server.on('listening', () => {
+    let client = rdbg.connect('ws://localhost:4000');
+    client.once('connect', () => {
+      let runtime = client.runtime;
+
+      client.once('response', (request, response) => {
+        assert.deepEqual({expression: 'Obj.resolve'}, request.params, 'request to evaluate the given expression on a global object');  
+        assert.deepEqual({type: 'object'}, response.result.result, 'response with a result from the object eveluation');
+        server.close();
+        assert.end();
+      });
+
+      runtime.evaluate('Obj.resolve', error => {});
+    });
+  });
+});

@@ -41,7 +41,7 @@ test('runtime call', assert => {
 
           server.close();
         });
-        
+
       });
 
       client.runtime.call('5', ()=>{}, { arguments: [{value: '10'}], returnByValue: true }, (error, result) => {});
@@ -127,3 +127,44 @@ test('runtime evaluate', assert => {
   });
 });
 
+test('runtime properties', assert => {
+  assert.plan(5);
+  let server = ws.createServer({port: '4000'});
+
+  server.once('connection', connection => {
+
+    connection.once('close', () => {
+      assert.pass('close');
+    });
+
+    connection.on('message', data => {
+      let message = JSON.parse(data);
+      connection.send(JSON.stringify({
+        id: message.id,
+        result: {
+          result: [{ name: 'type', configurable: false, enumerable: true }]
+        }
+      }));
+    });
+  });
+
+  server.on('listening', () => {
+    let client = rdbg.connect('ws://localhost:4000');
+    client.once('connect', () => {
+
+      client.once('response', (request, response) => {
+        assert.equal(request.method, 'Runtime.getProperties');
+        assert.deepEqual(request.params, { objectId: '5', ownProperties: true });
+
+        client.runtime.properties('2', (error, result) => {
+          assert.error(error);
+          assert.deepEqual(result, [{ name: 'type', configurable: false, enumerable: true }]);
+
+          server.close();
+        });
+      });
+
+      client.runtime.properties('5', { ownProperties: true }, (error, result) => {});
+    });
+  });
+});

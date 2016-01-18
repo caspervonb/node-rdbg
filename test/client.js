@@ -36,8 +36,8 @@ test('client requests', assert => {
 
           client.request('Console.disable', (error, result) => {
             assert.error(error);
-            assert.deepEqual(result.params, {});
-            assert.equal(result.method, 'Console.disable');
+            assert.deepEqual(result.result.params, {});
+            assert.equal(result.result.method, 'Console.disable');
 
             server.close();
             assert.pass('close');

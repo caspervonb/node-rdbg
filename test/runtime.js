@@ -203,3 +203,38 @@ test('runtime release', assert => {
     });
   });
 });
+
+test('runtime release group', assert => {
+  assert.plan(4);
+  let server = ws.createServer({port: '4000'});
+
+  server.once('connection', connection => {
+
+    connection.once('close', () => {
+      assert.pass('close');
+    });
+
+    connection.on('message', data => {
+      let message = JSON.parse(data);
+      connection.send(JSON.stringify({
+        id: message.id
+      }));
+    });
+  });
+
+  server.on('listening', () => {
+    let client = rdbg.connect('ws://localhost:4000');
+    client.once('connect', () => {
+
+      client.once('response', (request, response) => {
+        assert.equal('Runtime.releaseObjectGroup', request.method);
+        assert.deepEqual(request.params, { objectGroup: 'group' });
+      });
+
+      client.runtime.releaseGroup('group', error => {
+        assert.error(error);
+        server.close();
+      });
+    });
+  });
+});

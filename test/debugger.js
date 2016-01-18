@@ -143,3 +143,42 @@ test('debugger canSetScriptSource', assert => {
     });
   });
 });
+
+test('debugger getScriptSource', assert => {
+  assert.plan(5);
+  let server = ws.createServer({port: '4000'});
+
+  server.once('connection', connection => {
+
+    connection.once('close', () => {
+      assert.pass('close');
+    });
+
+    connection.on('message', data => {
+      let message = JSON.parse(data);
+      connection.send(JSON.stringify({
+        id: message.id,
+        result: {
+          scriptSource: 'script'
+        }
+      }));
+    });
+  });
+
+  server.on('listening', () => {
+    let client = rdbg.connect('ws://localhost:4000');
+    client.once('connect', () => {
+
+      client.once('response', (request, response) => {
+        assert.equal(request.method, 'Debugger.getScriptSource');
+        assert.deepEqual(request.params, { scriptId: '5' });
+      });
+
+      client.debugger.getScriptSource('5', (error, scriptSource) => {
+        assert.error(error);
+        assert.equal(scriptSource, 'script');
+        server.close();
+      });
+    });
+  });
+});

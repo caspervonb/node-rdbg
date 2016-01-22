@@ -2,9 +2,9 @@
   "name": "rdbg",
   "version": "1.1.0",
   "description": "",
-  "main": "lib/index.js",
+  "main": "lib/rdbg",
   "files": [
-    "lib/index.js"
+    "lib/rdbg"
   ],
   "dependencies": {
     "tape": "^4.2.2",
